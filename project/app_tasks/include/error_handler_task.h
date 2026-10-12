@@ -29,7 +29,7 @@
 
 typedef enum {
   // System health analog watchdog threshold error
-  EVT_SYS_HEALTH_AWDG_THRESH_EXCEEDED = 0,
+  EVT_SYSTEM_HEALTH_TEMP_EXCEEDED = 0,
 
   // Sensor read error
   EVT_SENSOR_READ_FAIL,
