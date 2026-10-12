@@ -13,10 +13,10 @@
  * Function definitionse
  */
 static void adc_register_set_CCR(void);
-static void adc_register_set_CR1(void);
-static void adc_register_set_CR2(void);
-static void adc_register_set_SMPR1(void);
-static void adc_register_set_SQR3(void);
+static void adc_1_register_set_CR1(void);
+static void adc_1_register_set_CR2(void);
+static void adc_1_register_set_SMPR1(void);
+static void adc_1_register_set_SQR3(void);
 
 void adc_init(void) {
   /** 
@@ -26,11 +26,11 @@ void adc_init(void) {
    */
   RCC->APB2ENR |= (1U << 8);
 
-  adc_register_set_CR1();
-  adc_register_set_CR2();
+  adc_1_register_set_CR1();
+  adc_1_register_set_CR2();
   adc_register_set_CCR();
-  adc_register_set_SMPR1();
-  adc_register_set_SQR3();
+  adc_1_register_set_SMPR1();
+  adc_1_register_set_SQR3();
 
   /**
    * Enable the NVIC ADC Interrupt Line.
@@ -51,16 +51,16 @@ void adc_init(void) {
  * - Set the prescaler for the ADC clock
  */
 static void adc_register_set_CCR(void) {
-  ADC1->CCR = 0; // Reset the ADC1 common control register
+  ADC->CCR = 0; // Reset the ADC1 common control register
 
   /**
    * TSVREFE bit [23]
    */
-  ADC1->CCR &= ~(1U << 23); // Reset : VREFINT and Temperature Sensor Channel
+  ADC->CCR &= ~(1U << 23); // Reset : VREFINT and Temperature Sensor Channel
   //
   // Initialise the following bits because they require startup time
   // Set the VREFINT and Temperature Sensor channel bit
-  ADC1->CCR |= 1U << 23;
+  ADC->CCR |= 1U << 23;
 
   /**
    *  VBATE bit [22] : VBAT enable
@@ -68,7 +68,7 @@ static void adc_register_set_CCR(void) {
    * Disable the VBATE to perform temperature measurement,
    * as VBAT and temperature sensor are on the same channel
    */
-  ADC1->CCR &= ~(1U << 22);
+  ADC->CCR &= ~(1U << 22);
 
   /**
    * ADCPRE [17:16] Bit field -> ADC Prescaler
@@ -79,7 +79,7 @@ static void adc_register_set_CCR(void) {
    * 2U -> 6
    * 3U -> 8
    */
-  ADC1->CCR |= (1U << 16);
+  ADC->CCR |= (1U << 16);
 }
 
 /**
@@ -89,7 +89,7 @@ static void adc_register_set_CCR(void) {
  * - Enable the EOC (End Of Conversion) Interrupt Enable bit
  * - This allows an interrupt function to be executed once conversion is complete.
  */
-static void adc_register_set_CR1(void) {
+static void adc_1_register_set_CR1(void) {
   /**
    * Reset the ADC1 control register 1
    */
@@ -104,7 +104,7 @@ static void adc_register_set_CR1(void) {
   ADC1->CR1 |= (1U << 5);
 }
 
-static void adc_register_set_CR2(void) {
+static void adc_1_register_set_CR2(void) {
   /**
    * Reset the ADC1 control register 2
    */
@@ -144,7 +144,7 @@ static void adc_register_set_CR2(void) {
 /**
  * Use the following function to set the SMPR1 (Sampling) register.
  */
-static void adc_register_set_SMPR1(void) {
+static void adc_1_register_set_SMPR1(void) {
   /**
    * Set the sampling rate for the temperature sensor
    */
@@ -179,7 +179,7 @@ static void adc_register_set_SMPR1(void) {
  * Temperature sensor is on Channel 18 (i.e. 18U) which is then
  * set to the register SQR3 from bit 0 to 4.
  */
-static void adc_register_set_SQR3(void) {
+static void adc_1_register_set_SQR3(void) {
   ADC1->SQR3 = 0; // Reset the register
   ADC1->SQR3 |= (ADC_CH_18 << 0);
 }
