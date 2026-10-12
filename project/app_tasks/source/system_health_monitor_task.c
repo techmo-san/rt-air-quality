@@ -31,5 +31,10 @@ static void vSystemHealthMonitorTask(void *param) {
 }
 
 void vSystemHealthMonitorTaskStart(void) {
-  configASSERT(pdPASS == xTaskCreate(vSystemHealthMonitorTask, "System Health Monitor Task", SYSTEM_HEALTH_MONITOR_TASK_STACK_SIZE, NULL, SYSTEM_HEALTH_MONITOR_TASK_STACK_PRIORITY, NULL);
+  configASSERT(pdPASS == xTaskCreate(vSystemHealthMonitorTask,
+                                     "System Health Monitor Task",
+                                     SYSTEM_HEALTH_MONITOR_TASK_STACK_SIZE,
+                                     NULL,
+                                     SYSTEM_HEALTH_MONITOR_TASK_STACK_PRIORITY,
+                                     NULL));
 }

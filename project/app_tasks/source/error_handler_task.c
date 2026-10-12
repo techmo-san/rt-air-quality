@@ -58,8 +58,8 @@ void vErrorHandlerTaskStart(void) {
   vQueueAddToRegistry(xErrorHandlerQueue, "Error Handler Queue");
 
   // Start the vErrorHandlerTask
-  configASSERT(xTaskCreate(vErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, NULL) ==
-               pdPASS);
+  configASSERT(pdPASS ==
+               xTaskCreate(vErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, NULL));
 }
 
 /**
@@ -144,7 +144,7 @@ static void vErrorHandlerTask(void *param) {
         }
 
         switch (received_evt_id) {
-        case EVT_SYS_HEALTH_AWDG_THRESH_EXCEEDED:
+        case EVT_SYSTEM_HEALTH_TEMP_EXCEEDED:
         case EVT_SENSOR_READ_FAIL:
         case EVT_FRAM_INIT_FAIL:
         case EVT_MODBUS_MUTEX_NOT_CREATED:
