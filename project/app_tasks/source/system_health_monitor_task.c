@@ -10,13 +10,27 @@
  * @date 12th October 2026
  */
 
-#include "system_health_monitor_task.h"
+#include <stdbool.h>
+
 #include "FreeRTOSTasks.h"
+#include "system_health_monitor_task.h"
 
 /**
  * Function definitions
  */
 static void vSystemHealthMonitorTask(void *param);
+/**
+ * ToDo:
+ * - Function to get temperature from analog values
+ * - Function to convert the temperature threshold values to ADC values
+ * - 
+ */
+
+static volatile uint8_t adc_conversion_complete = 0; // Variable to confirm conversion of analog value
+static volatile uint8_t adc_temp_val = 0;            // Variable to save the converted temperature value
+static volatile bool mcu_temp_ok = true;             // Flag variable to monitor internal CPU temperature
+
+volatile bool g_sensors_task_ok = false;
 
 /**
  * Task to get temperature values
@@ -28,6 +42,14 @@ static void vSystemHealthMonitorTask(void *param);
  */
 static void vSystemHealthMonitorTask(void *param) {
   (void)param;
+
+  float internal_temp;
+
+  if ((CoreDebug->DHCSR & CoreDebug_DHCSR_DEBUGEN_Msk) == 0) {
+    // ToDo: Initialise the watchdog timer
+  }
+
+  bool system_healthy = false;
 }
 
 void vSystemHealthMonitorTaskStart(void) {
