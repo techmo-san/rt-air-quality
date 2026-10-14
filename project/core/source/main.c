@@ -16,15 +16,16 @@
 static void vStartup(void);
 
 int main(void) {
-  /**
-   * Initial RCC configuration
-   */
+  // Variables to confirm clock speeds
   uint32_t system_clock = 0;
   uint32_t hclk = 0;
   uint32_t apb1_clock = 0;
   uint32_t apb2_clock = 0;
 
+  // Initial RCC configuration
   rcc_init();
+
+  // Get the system and peripheral clock speeds
   system_clock = rcc_get_sysclk_freq();
   hclk = rcc_get_hclk_freq();
   apb1_clock = rcc_get_pclk1_freq();
@@ -35,14 +36,10 @@ int main(void) {
   (void)apb1_clock;
   (void)apb2_clock;
 
-  /**
-   * Update the 'SystemCoreClock' variable required by FreeRTOS
-   */
+  // Update the 'SystemCoreClock' variable required by FreeRTOS
   SystemCoreClockUpdate();
 
-  /**
-   * Initialise the GPIO pins for different peripherals and USER_LED
-   */
+  //Initialise the GPIO pins for different peripherals and USER_LED
   GPIO_init();
 
   // Start the error task handler
@@ -63,7 +60,7 @@ static void vStartupTask(void *param) {
 
   vErrorHandlerSendMsg(EVT_MODBUS_DATA_UPDATE_HOLDING_REGS_FAIL);
 
-  // for (event_id_e error = EVT_SYS_HEALTH_AWDG_THRESH_EXCEEDED; error < EVT_TOTAL; error++) {
+  // for (event_id_e error = EVT_SYSTEM_HEALTH_TEMP_EXCEEDED; error < EVT_TOTAL; error++) {
   //   vErrorHandlerSendMsg(error);
   // }
 
