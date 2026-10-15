@@ -1,6 +1,6 @@
 /**
  * @file adc.c
- * @brief
+ * @brief Setup the ADC converter to interface with the internal temperature sensor
  *
  * @author Anirudh Singh
  * @date 12th October 2026

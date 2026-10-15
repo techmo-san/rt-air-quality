@@ -1,6 +1,6 @@
 /**
  * @file adc.h
- * @brief
+ * @brief Header file for the ADC converter driver
  *
  * @author Anirudh Singh
  * @date 12th October 2026
@@ -9,6 +9,7 @@
 #ifndef INC_ADC_H
 #define INC_ADC_H
 
+// Give channel numbers a name
 typedef enum {
   ADC_CH_0 = 0,
   ADC_CH_1,
