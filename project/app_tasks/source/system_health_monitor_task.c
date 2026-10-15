@@ -43,13 +43,13 @@ volatile bool g_sensors_task_ok = false;
 static void vSystemHealthMonitorTask(void *param) {
   (void)param;
 
-  float internal_temp;
+  // float internal_temp;
 
-  if ((CoreDebug->DHCSR & CoreDebug_DHCSR_DEBUGEN_Msk) == 0) {
+  if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0) {
     // ToDo: Initialise the watchdog timer
   }
 
-  bool system_healthy = false;
+  // bool system_healthy = false;
 }
 
 void vSystemHealthMonitorTaskStart(void) {
