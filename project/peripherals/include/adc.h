@@ -9,6 +9,8 @@
 #ifndef INC_ADC_H
 #define INC_ADC_H
 
+#include <stdint.h>
+
 // Give channel numbers a name
 typedef enum {
   ADC_CH_0 = 0,
@@ -36,5 +38,14 @@ typedef enum {
  * Initialise the analog-to-digital converter
  */
 void adc_init(void);
+
+/**
+ * Read the analog data register to convert it to
+ * CPU's internal temperature in the system health
+ * monitor task
+ *
+ * @return analog_temp_val 16 bit value of the analog read
+ */
+uint16_t adc_1_read_data_register(void);
 
 #endif // !INC_ADC_H
