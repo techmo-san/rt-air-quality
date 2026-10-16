@@ -13,23 +13,28 @@
 #include <stdbool.h>
 
 #include "FreeRTOSTasks.h"
+#include "adc.h"
+#include "error_handler_task.h"
 #include "system_health_monitor_task.h"
+#include "tim.h"
+
+/**********************************************
+ ******* Private function definitions *********
+ *********************************************/
+
+static void prvSystemHealthMonitorTask(void *param);
 
 /**
- * Function definitions
+ * Use the following function to read the analog value
+ * for the internal temperature sensor. Then convert it
+ * to Celsius.
+ *
+ * @return read_temp_celsius Temperature in Celsius
  */
-static void vSystemHealthMonitorTask(void *param);
-/**
- * ToDo:
- * - Function to get temperature from analog values
- * - Function to convert the temperature threshold values to ADC values
- * - 
- */
+static float prvGetInternalTemp(void);
 
-static volatile uint8_t adc_conversion_complete = 0; // Variable to confirm conversion of analog value
-static volatile uint8_t adc_temp_val = 0;            // Variable to save the converted temperature value
-static volatile bool mcu_temp_ok = true;             // Flag variable to monitor internal CPU temperature
-
+static volatile uint8_t adc_temp_val = 0; // Variable to save the converted temperature value
+static volatile bool mcu_temp_ok = true;  // Flag variable to monitor internal CPU temperature
 volatile bool g_sensors_task_ok = false;
 
 /**
@@ -40,20 +45,35 @@ volatile bool g_sensors_task_ok = false;
  * - If its outside the threshold send an error message
  * - If its inside this value then let it run
  */
-static void vSystemHealthMonitorTask(void *param) {
+static void prvSystemHealthMonitorTask(void *param) {
   (void)param;
 
-  // float internal_temp;
+  float internal_temp = prvGetInternalTemp();
+  if (!((internal_temp > MIN_INT_TEMP_THRESHOLD_CELSIUS) && (internal_temp < MAX_INT_TEMP_THRESHOLD_CELSIUS))) {
+    vErrorHandlerSendMsg(EVT_SYSTEM_HEALTH_TEMP_EXCEEDED);
+  }
+}
 
-  if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0) {
-    // ToDo: Initialise the watchdog timer
+static float prvGetInternalTemp(void) {
+  float read_temp_celsius = 0.0F; // Variable to store the ADC converted temperature value
+  float V_SENSE = 0.0F;           // Convert analog value to a voltage
+  uint16_t read_analog_val = 0U;  // Read analog value from the data register
+
+  read_analog_val = adc_1_read_data_register(); // Get the value from the register
+  if (read_analog_val != 0) {
+    V_SENSE = ((float)read_analog_val / 4095.0F) * V_REF_PLUS; // ADC is 12-bit
+    read_temp_celsius = ((V_SENSE - V_25) / AVG_SLOPE_SENSE_CURVE) + 25;
   }
 
-  // bool system_healthy = false;
+  return read_temp_celsius;
 }
 
 void vSystemHealthMonitorTaskStart(void) {
-  configASSERT(pdPASS == xTaskCreate(vSystemHealthMonitorTask,
+  // Initialise and start the clocks
+  adc_init();
+  tim_2_init();
+
+  configASSERT(pdPASS == xTaskCreate(prvSystemHealthMonitorTask,
                                      "System Health Monitor Task",
                                      SYSTEM_HEALTH_MONITOR_TASK_STACK_SIZE,
                                      NULL,

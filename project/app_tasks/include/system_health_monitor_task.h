@@ -20,6 +20,13 @@
 #define MIN_INT_TEMP_THRESHOLD_CELSIUS (-10)
 
 /**
+ * Constants for temperature ADC conversion
+ */
+#define V_REF_PLUS (3.3F)
+#define V_25 (0.76F)                    // in Volts (V)
+#define AVG_SLOPE_SENSE_CURVE (0.0025F) // in V/°C
+
+/**
  * Function definition for the task
  */
 void vSystemHealthMonitorTaskStart(void);
