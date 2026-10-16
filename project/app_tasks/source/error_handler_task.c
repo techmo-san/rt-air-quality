@@ -12,20 +12,17 @@
 #include "gpio_defs.h"
 #include "queue.h"
 
-/**
- * Function definitons
- */
-static void vErrorHandlerTask(void *param);
-static void vErrorHandlerLEDBlink(void);
+/*******************************************
+ ******* Private function definitons *******
+ *******************************************/
 
-/**
- * Queue to send and receive error messages.
- */
+static void prvErrorHandlerTask(void *param);
+static void prvErrorHandlerLEDBlink(void);
+
+// Queue to send and receive error messages.
 QueueHandle_t xErrorHandlerQueue = NULL;
 
-/**
- * Array to save the error counts for different event IDs
- */
+// Array to save the error counts for different event IDs
 static uint32_t error_count[EVT_TOTAL] = {0U};
 
 // Error drop count if xQueueSend does not work
@@ -59,7 +56,7 @@ void vErrorHandlerTaskStart(void) {
 
   // Start the vErrorHandlerTask
   configASSERT(pdPASS ==
-               xTaskCreate(vErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, NULL));
+               xTaskCreate(prvErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, NULL));
 }
 
 /**
@@ -131,7 +128,7 @@ error_t vErrorHandlerSendMsgFromISR(event_id_e evt_err_id) {
  * 3. Flag this error
  * 4. Start the blinking LED task to visually indicate the error
  */
-static void vErrorHandlerTask(void *param) {
+static void prvErrorHandlerTask(void *param) {
   (void)param;
 
   event_id_e received_evt_id;
@@ -158,7 +155,7 @@ static void vErrorHandlerTask(void *param) {
         case EVT_MODBUS_DATA_UPDATE_INPUT_REGS_FAIL:
 
         default:
-          vErrorHandlerLEDBlink();
+          prvErrorHandlerLEDBlink();
           break;
         }
       }
@@ -169,7 +166,7 @@ static void vErrorHandlerTask(void *param) {
 /**
  * Launching a LED blink task when there is an error
  */
-static void vErrorHandlerLEDBlink(void) {
+static void prvErrorHandlerLEDBlink(void) {
   for (uint8_t i = 0; i < EVT_BLINK_CYCLES; i++) {
     GPIO_reset_pin(&USER_LED);
     vTaskDelay(EVT_BLINK_DELAY);
