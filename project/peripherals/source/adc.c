@@ -9,9 +9,10 @@
 #include "adc.h"
 #include "stm32f4xx.h"
 
-/**
- * Function definitionse
- */
+/*****************************************
+ ****** Private function definitions *****
+ *****************************************/
+
 static void adc_register_set_CCR(void);
 static void adc_1_register_set_CR1(void);
 static void adc_1_register_set_CR2(void);
@@ -41,6 +42,26 @@ void adc_init(void) {
    * 2. NVIC
    */
   NVIC_EnableIRQ(ADC_IRQn);
+}
+
+/**
+ * Read the analog data register to convert it to
+ * CPU's internal temperature in the system health
+ * monitor task
+ *
+ * @return analog_temp_val 16 bit value of the analog read
+ */
+uint16_t adc_1_read_data_register(void) {
+  uint16_t analog_temp_val = 0;
+
+  // Check if the EOC bit 1 in the ADC_SR register is ready
+  // ToDo: Replace continuous polling with interrupt based wakeup
+  // while (!(ADC1->SR & (1U << 1))) {
+  // }
+
+  analog_temp_val = (ADC1->DR & 0xFFFFU); // Mask the register with 16 bits of 1
+
+  return analog_temp_val;
 }
 
 /**
@@ -154,8 +175,8 @@ static void adc_1_register_set_SMPR1(void) {
    * - APB2 clock frequency at 45 MHz
    * - Temperature sensor sampling time = 10 us
    * - ADC1 Clock  = APB2 / Prescaler (2, 4, 6, 8)
-   * - ADC1 Clock Period at (22.5 MHz) = 44.444 ns
-   * - ADC1 Clock Period at (11.25 MHz) = 88.888 ns
+   * - ADC1 Clock Period at prescaler 2 (22.5 MHz) = 44.444 ns
+   * - ADC1 Clock Period at prescaler 4 (11.25 MHz) = 88.888 ns
    * - Sampling Rate = (10 * 10^3 (ns) / ADC1 Clock Period (ns)) = 225 cycles or 112.5 cycles
    *
    * Choosing the sampling rate of 144 cycles at 11.25 MHz ADC1 clock frequency and shifting to the left by 24
