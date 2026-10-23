@@ -29,7 +29,10 @@ void tim_2_init() {
   RCC->APB1ENR |= (1U << 0);
 
   /**
-   * Counter Period = (APB2 Clock Speed) / ((PSC + 1) * (ASC + 1)) = 1Hz
+   * TIM2 clock speed = 2 * APB1 Clock Speed = 90 MHz (Because APB prescaler is > 1)
+   * Section 6.2. page 119 of the reference manual
+   *
+   * Counter Period = (TIM2 Clock Speed) / ((PSC + 1) * (ARR + 1))
    * - Set the prescaler value (TIMx_PSC)
    * - This is a 16 bit register that accepts the passed value
    */
