@@ -7,6 +7,7 @@
  */
 
 #include "error_handler_task.h"
+#include "FreeRTOSTasks.h"
 #include "error.h"
 #include "gpio.h"
 #include "gpio_defs.h"
@@ -15,9 +16,8 @@
 /*******************************************
  ******* Private function definitons *******
  *******************************************/
-
-static void prvErrorHandlerTask(void *param);
-static void prvErrorHandlerLEDBlink(void);
+static void vErrorHandlerTask(void *param);
+static void vErrorHandlerLEDBlink(void);
 
 // Queue to send and receive error messages.
 QueueHandle_t xErrorHandlerQueue = NULL;
@@ -38,6 +38,12 @@ static uint32_t error_drop_count[EVT_TOTAL] = {0U};
  * 3. Launch the Error Handler task
  */
 void vErrorHandlerTaskStart(void) {
+  // Empty task handle
+  TaskHandle_t xErrorTaskHandle = NULL;
+
+  // Return variable for task creation
+  BaseType_t xReturned;
+
   // Create a queue of event IDs to be stored
   xErrorHandlerQueue = xQueueCreate(QUEUE_LENGTH, sizeof(event_id_e));
 
@@ -54,9 +60,12 @@ void vErrorHandlerTaskStart(void) {
   // Add queue to the registry for easier debugging
   vQueueAddToRegistry(xErrorHandlerQueue, "Error Handler Queue");
 
-  // Start the vErrorHandlerTask
-  configASSERT(pdPASS ==
-               xTaskCreate(prvErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, NULL));
+  // Create the task
+  xReturned = xTaskCreate(
+      vErrorHandlerTask, "Error Handler Task", ERROR_HANDLER_TASK_STACK_SIZE, NULL, ERROR_HANDLER_TASK_STACK_PRIORITY, &xErrorTaskHandle);
+  if (xReturned != pdPASS) {
+    vTaskDelete(xErrorTaskHandle); // Delete the error task handler if it cannot be created
+  }
 }
 
 /**
@@ -73,10 +82,11 @@ error_t vErrorHandlerSendMsg(event_id_e evt_err_id) {
   }
 
   /**
-   * Note: Handle to the queue to which the error ID needs to be posted and 
+   * Note: Handle to the queue to which the error ID needs to be posted and
    * wait indefinitely until a place inside the queue is free (hence, blocking the xQueueSend)
    */
   if (xQueueSend(xErrorHandlerQueue, &evt_err_id, portMAX_DELAY) != pdPASS) {
+    // if (xQueueSend(xErrorHandlerQueue, &evt_err_id, pdMS_TO_TICKS(100)) != pdPASS) {
     error_drop_count[evt_err_id]++;
     return ERR_FAIL;
   }
@@ -128,7 +138,7 @@ error_t vErrorHandlerSendMsgFromISR(event_id_e evt_err_id) {
  * 3. Flag this error
  * 4. Start the blinking LED task to visually indicate the error
  */
-static void prvErrorHandlerTask(void *param) {
+static void vErrorHandlerTask(void *param) {
   (void)param;
 
   event_id_e received_evt_id;
@@ -155,7 +165,7 @@ static void prvErrorHandlerTask(void *param) {
         case EVT_MODBUS_DATA_UPDATE_INPUT_REGS_FAIL:
 
         default:
-          prvErrorHandlerLEDBlink();
+          vErrorHandlerLEDBlink();
           break;
         }
       }
@@ -166,7 +176,7 @@ static void prvErrorHandlerTask(void *param) {
 /**
  * Launching a LED blink task when there is an error
  */
-static void prvErrorHandlerLEDBlink(void) {
+static void vErrorHandlerLEDBlink(void) {
   for (uint8_t i = 0; i < EVT_BLINK_CYCLES; i++) {
     GPIO_reset_pin(&USER_LED);
     vTaskDelay(EVT_BLINK_DELAY);
