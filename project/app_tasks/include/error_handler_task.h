@@ -9,7 +9,6 @@
 #ifndef INC_ERROR_HANDLER_TASK_H
 #define INC_ERROR_HANDLER_TASK_H
 
-#include "FreeRTOSTasks.h"
 #include "error.h"
 
 /**
@@ -53,6 +52,9 @@ typedef enum {
   EVT_MODBUS_DATA_UPDATE_COILS_FAIL,
   EVT_MODBUS_DATA_UPDATE_HOLDING_REGS_FAIL,
   EVT_MODBUS_DATA_UPDATE_INPUT_REGS_FAIL,
+
+  // Task creation failure
+  EVT_SYSTEM_HEALTH_TASK_CREATE_FAILED,
 
   // Total number of error codes
   EVT_TOTAL
