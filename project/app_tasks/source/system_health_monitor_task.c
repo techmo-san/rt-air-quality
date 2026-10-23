@@ -22,7 +22,10 @@
  ******* Private function definitions *********
  *********************************************/
 
-static void prvSystemHealthMonitorTask(void *param);
+static void vSystemHealthMonitorTask(void *param);
+
+// Variable to store the converted temperature
+static volatile float internal_temp_celsius = 0.0F;
 
 /**
  * Use the following function to read the analog value
@@ -31,11 +34,7 @@ static void prvSystemHealthMonitorTask(void *param);
  *
  * @return read_temp_celsius Temperature in Celsius
  */
-static float prvGetInternalTemp(void);
-
-static volatile uint8_t adc_temp_val = 0; // Variable to save the converted temperature value
-static volatile bool mcu_temp_ok = true;  // Flag variable to monitor internal CPU temperature
-volatile bool g_sensors_task_ok = false;
+static float raw_to_celsius(void);
 
 /**
  * Task to get temperature values
@@ -45,38 +44,53 @@ volatile bool g_sensors_task_ok = false;
  * - If its outside the threshold send an error message
  * - If its inside this value then let it run
  */
-static void prvSystemHealthMonitorTask(void *param) {
+static void vSystemHealthMonitorTask(void *param) {
   (void)param;
 
-  float internal_temp = prvGetInternalTemp();
-  if (!((internal_temp > MIN_INT_TEMP_THRESHOLD_CELSIUS) && (internal_temp < MAX_INT_TEMP_THRESHOLD_CELSIUS))) {
-    vErrorHandlerSendMsg(EVT_SYSTEM_HEALTH_TEMP_EXCEEDED);
+  while (1) {
+    if (ulTaskNotifyTake(pdTRUE, portMAX_DELAY) > 0U) {
+      // float internal_temp = raw_to_celsius();
+      internal_temp_celsius = raw_to_celsius();
+      if ((internal_temp_celsius < MIN_INT_TEMP_THRESHOLD_CELSIUS) || (internal_temp_celsius > MAX_INT_TEMP_THRESHOLD_CELSIUS)) {
+        vErrorHandlerSendMsg(EVT_SYSTEM_HEALTH_TEMP_EXCEEDED);
+      }
+    }
   }
 }
 
-static float prvGetInternalTemp(void) {
-  float read_temp_celsius = 0.0F; // Variable to store the ADC converted temperature value
-  float V_SENSE = 0.0F;           // Convert analog value to a voltage
-  uint16_t read_analog_val = 0U;  // Read analog value from the data register
+static float raw_to_celsius(void) {
+  float temp_celsius = 0.0F;                  // Variable to store the ADC converted temperature value
+  float V_SENSE = 0.0F;                       // Convert analog value to a voltage
+  uint16_t temp_raw = adc_get_int_temp_raw(); // Get the raw analog value from adc driver file
 
-  read_analog_val = adc_1_read_data_register(); // Get the value from the register
-  if (read_analog_val != 0) {
-    V_SENSE = ((float)read_analog_val / 4095.0F) * V_REF_PLUS; // ADC is 12-bit
-    read_temp_celsius = ((V_SENSE - V_25) / AVG_SLOPE_SENSE_CURVE) + 25;
-  }
+  V_SENSE = ((float)temp_raw / 4095.0F) * V_REF_PLUS; // ADC is 12-bit (2^12 = 4096)
+  temp_celsius = ((V_SENSE - V_25) / AVG_SLOPE_SENSE_CURVE) + 25;
 
-  return read_temp_celsius;
+  return temp_celsius;
 }
 
 void vSystemHealthMonitorTaskStart(void) {
-  // Initialise and start the clocks
+  BaseType_t xReturned;
+  TaskHandle_t xSystemHealthHandle = NULL;
+
+  // Initialise and start the ADC clock
   adc_init();
+
+  // Create the health monitor task
+  xReturned = xTaskCreate(vSystemHealthMonitorTask,
+                          "System Health Monitor Task",
+                          SYSTEM_HEALTH_MONITOR_TASK_STACK_SIZE,
+                          NULL,
+                          SYSTEM_HEALTH_MONITOR_TASK_STACK_PRIORITY,
+                          &xSystemHealthHandle);
+
+  // Save the handler to be used later for ADC ISR notifications
+  adc_get_system_health_handle(xSystemHealthHandle);
+
+  // Start the timer clock and ADC conversion
   tim_2_init();
 
-  configASSERT(pdPASS == xTaskCreate(prvSystemHealthMonitorTask,
-                                     "System Health Monitor Task",
-                                     SYSTEM_HEALTH_MONITOR_TASK_STACK_SIZE,
-                                     NULL,
-                                     SYSTEM_HEALTH_MONITOR_TASK_STACK_PRIORITY,
-                                     NULL));
+  if (xReturned != pdPASS) {
+    vErrorHandlerSendMsg(EVT_SYSTEM_HEALTH_TASK_CREATE_FAILED); // Delete the system health monitor task if it can't be created
+  }
 }

@@ -16,8 +16,8 @@
 /**
  * Thresholds for the internal CPU temperature: -40 °C to 125 °C
  */
-#define MAX_INT_TEMP_THRESHOLD_CELSIUS (100)
-#define MIN_INT_TEMP_THRESHOLD_CELSIUS (-10)
+#define MIN_INT_TEMP_THRESHOLD_CELSIUS (0)
+#define MAX_INT_TEMP_THRESHOLD_CELSIUS (35)
 
 /**
  * Constants for temperature ADC conversion
