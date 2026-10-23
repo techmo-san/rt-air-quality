@@ -12,6 +12,7 @@
 #include "gpio_defs.h"
 #include "rcc.h"
 #include "stm32f4xx.h"
+#include "system_health_monitor_task.h"
 
 static void vStartup(void);
 
@@ -45,6 +46,9 @@ int main(void) {
   // Start the error task handler
   vErrorHandlerTaskStart();
 
+  // Start the system health montor task
+  vSystemHealthMonitorTaskStart();
+
   // Start the task
   vStartup();
 
@@ -58,11 +62,7 @@ int main(void) {
 static void vStartupTask(void *param) {
   (void)param;
 
-  vErrorHandlerSendMsg(EVT_MODBUS_DATA_UPDATE_HOLDING_REGS_FAIL);
-
-  // for (event_id_e error = EVT_SYSTEM_HEALTH_TEMP_EXCEEDED; error < EVT_TOTAL; error++) {
-  //   vErrorHandlerSendMsg(error);
-  // }
+  // vErrorHandlerSendMsg(EVT_SYSTEM_HEALTH_TEMP_EXCEEDED);
 
   // Delete startup task after creating other tasks
   vTaskDelete(NULL);
