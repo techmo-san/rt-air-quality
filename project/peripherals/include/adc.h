@@ -11,6 +11,8 @@
 
 #include <stdint.h>
 
+#include "FreeRTOSTasks.h"
+
 // Give channel numbers a name
 typedef enum {
   ADC_CH_0 = 0,
@@ -40,12 +42,22 @@ typedef enum {
 void adc_init(void);
 
 /**
- * Read the analog data register to convert it to
- * CPU's internal temperature in the system health
- * monitor task
- *
- * @return analog_temp_val 16 bit value of the analog read
+ * ISR for ADC interrupts defined inside 'interrupts.h'
+ * This function should be minimal and flag handling should
+ * be resolved by the error handler tasks.
  */
-uint16_t adc_1_read_data_register(void);
+void ADC_IRQ(void);
+
+/**
+ * Get the task handle for system health monitor task.
+ * This is needed to do ISR notification polling of sensor.
+ */
+void adc_get_system_health_handle(TaskHandle_t handle);
+
+/**
+ * Get the raw digital value from the data register
+ * for the internal temperature sensor.
+ */
+uint16_t adc_get_int_temp_raw(void);
 
 #endif // !INC_ADC_H

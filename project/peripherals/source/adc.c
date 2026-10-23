@@ -6,21 +6,32 @@
  * @date 12th October 2026
  */
 
+#include <stdbool.h>
+
+#include "FreeRTOSTasks.h"
 #include "adc.h"
+#include "interrupts.h"
 #include "stm32f4xx.h"
 
 /*****************************************
  ****** Private function definitions *****
  *****************************************/
-
 static void adc_register_set_CCR(void);
 static void adc_1_register_set_CR1(void);
 static void adc_1_register_set_CR2(void);
 static void adc_1_register_set_SMPR1(void);
 static void adc_1_register_set_SQR3(void);
 
+/*****************************************
+ ********* Temperature Handler ***********
+ *****************************************/
+static volatile uint16_t temp_raw = 0;
+static volatile bool adc_conversion_complete = false;
+static volatile bool adc_overrun_detected = false;
+static TaskHandle_t xSystemHealthHandle = NULL; // Save the task handler to be used later for ISR notifications
+
 void adc_init(void) {
-  /** 
+  /**
    * Enable ADC1 clock
    *
    * ADC1EN bit [8]
@@ -39,29 +50,10 @@ void adc_init(void) {
    *
    * The interrupt chain needs two bits fields to be set:
    * 1. At the peripheral level: EOCIE
-   * 2. NVIC
+   * 2. NVIC Enable Interrupt Request: ADC_IRQn is the interrupt line inside 'stm32f4xx.h'
    */
+  NVIC_SetPriority(ADC_IRQn, 5);
   NVIC_EnableIRQ(ADC_IRQn);
-}
-
-/**
- * Read the analog data register to convert it to
- * CPU's internal temperature in the system health
- * monitor task
- *
- * @return analog_temp_val 16 bit value of the analog read
- */
-uint16_t adc_1_read_data_register(void) {
-  uint16_t analog_temp_val = 0;
-
-  // Check if the EOC bit 1 in the ADC_SR register is ready
-  // ToDo: Replace continuous polling with interrupt based wakeup
-  // while (!(ADC1->SR & (1U << 1))) {
-  // }
-
-  analog_temp_val = (ADC1->DR & 0xFFFFU); // Mask the register with 16 bits of 1
-
-  return analog_temp_val;
 }
 
 /**
@@ -78,7 +70,7 @@ static void adc_register_set_CCR(void) {
    * TSVREFE bit [23]
    */
   ADC->CCR &= ~(1U << 23); // Reset : VREFINT and Temperature Sensor Channel
-  //
+
   // Initialise the following bits because they require startup time
   // Set the VREFINT and Temperature Sensor channel bit
   ADC->CCR |= 1U << 23;
@@ -203,4 +195,55 @@ static void adc_1_register_set_SMPR1(void) {
 static void adc_1_register_set_SQR3(void) {
   ADC1->SQR3 = 0; // Reset the register
   ADC1->SQR3 |= (ADC_CH_18 << 0);
+}
+
+/********************************************************
+ *********** Temperature Handling Functions *************
+ *******************************************************/
+
+/**
+ * ISR for ADC interrupts defined inside 'interrupts.h'
+ * This function should be minimal and flag handling should
+ * be resolved by the error handler tasks.
+ */
+void ADC_IRQ(void) {
+  BaseType_t woken = pdFALSE;
+
+  /**
+   * Compare the ADC status register with a bitmask of value 2
+   * EOC is the 2nd bit in the ADC_SR register
+   */
+  if (ADC1->SR & (1U << 1)) {
+    temp_raw = (uint16_t)(ADC1->DR & 0xFFFFU); // Mask the register with 16 bits of 1
+
+    // Clear the EOC flag in ADC_SR register
+    ADC1->SR &= ~(1U << 1);
+
+    adc_conversion_complete = true;
+
+    if (xSystemHealthHandle != NULL) {
+      vTaskNotifyGiveFromISR(xSystemHealthHandle, &woken);
+    }
+  }
+
+  /**
+   * Check if the data is lost by checking the
+   * overrun flag. This bit OVR is set by the hardware
+   * if data is lost.
+   */
+  if (ADC1->SR & (1U << 5)) {
+    ADC1->SR &= ~(1U << 5); // Clear the bit if overrun has occurred.
+    adc_overrun_detected = true;
+  }
+
+  // Request a context switch
+  portYIELD_FROM_ISR(woken);
+}
+
+void adc_get_system_health_handle(TaskHandle_t handle) {
+  xSystemHealthHandle = handle; // Save the task handler inside the static variable
+}
+
+uint16_t adc_get_int_temp_raw(void) {
+  return temp_raw;
 }
