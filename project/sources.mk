@@ -7,6 +7,7 @@ COMMON_DIR := common
 CONFIG_DIR := config
 CORE_DIR := core
 FREERTOS_DIR := middleware/FreeRTOS
+INTERRUPTS_DIR := interrupts
 LINKER_DIR := linker
 LOG_DIR := logs
 PERI_DIR := peripherals
@@ -30,9 +31,12 @@ PERI_SOURCES := $(wildcard $(PERI_DIR)/source/*.c)
 # Add filepath for TASKS_DIR
 TASKS_SOURCES := $(wildcard $(TASKS_DIR)/source/*.c)
 
+# Add filepath for INTERRUPTS_DIR
+INTERRUPTS_SOURCES := $(wildcard $(INTERRUPTS_DIR)/source/*.c)
+
 # Add them together as the files have the same '.c' extension
 SOURCES := $(wildcard $(CORE_DIR)/source/*.c)
-SOURCES += $(FREERTOS_SOURCES) $(PERI_SOURCES) $(TASKS_SOURCES)
+SOURCES += $(FREERTOS_SOURCES) $(PERI_SOURCES) $(TASKS_SOURCES) $(INTERRUPTS_SOURCES)
 
 # Add include files
 INCLUDES := -I./$(CMSIS_DIR) \
@@ -42,6 +46,7 @@ INCLUDES := -I./$(CMSIS_DIR) \
 						-I./$(CORE_DIR)/source \
 						-I./$(FREERTOS_DIR)/Source/portable/GCC/ARM_CM4F \
 						-I./$(FREERTOS_DIR)/Source/include \
+						-I./$(INTERRUPTS_DIR)/include \
 						-I./$(PERI_DIR)/include \
 						-I./$(PERI_DIR)/source \
 						-I./$(TASKS_DIR)/include
